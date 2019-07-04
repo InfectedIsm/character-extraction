@@ -1,28 +1,32 @@
 clear all;
 clc;
 
-%création de la figure
+%create figure
 figure(1);
 subplot(2,1,1);
 
-%récupération de l'image
+%get the image and normalize pixels between 0 and 1
+%Scale : BLACK[0 0.01 0.02 0.03 ... ... ... 0.98 0.99 1]WHITE
 text_img = 1/255*double(rgb2gray(imread('text_image.png')));
 text_img = imadjust(text_img);
 
-%affichage de l'image
+%show image
 imshow(text_img);
 
-%sommation de toutes les colonnes pour détecter le zones blanches (valeurs faibles)
+%each column is summed in order to detect "blank zones" showing spaces between characters
+%input : image table, output : vector
 text_horz_density = sum(text_img);
 
-%récupérer la valeur min pour en faire un seuil de detection d'espace entre caractères
+%look for the minimum value into the vector, this value will be the threshold saying if a zone is blank or not
+%indice is not used here
+%we use max function here because the more white there is in a column, the bigger will be the value of the sum
 [minimum_val indice] = max(text_horz_density);
 
-%monter le seuil pour détecter "tous les min" car les espaces sont plus ou moins blancs
+%add a small value to the threshold because all the black doesn't have the same summed value, some will be darker
 minimum_val = minimum_val-10;
 minimum_val_vect = minimum_val*ones(1,length(text_horz_density));
 
-%1 quand il y a un caractère, 0 quand il n'y a pas de caractère
+%this vector contain 2 values, 0 and 1, where 0 indicate that a caracter is present in this column, and 1 a blank
 separator_dect = (text_horz_density <= minimum_val);
 
 
@@ -41,13 +45,13 @@ char_limits = 0;
 actual_val = 0;
 old_val =0;
 
-%cette boucle récpère tous les indices où il y a une transition 
-%caractère>>espace et espace>>caract
+%this look detect transition between blank and notblank zones, in order to separate each characters
+%trasitions : character>>blank and blank>>character
 
 for i=1 : 1 : length(text_horz_density)
     char_detected =0;
     actual_val = separator_dect(i);
-    if(old_val ~= actual_val ) %detection d'un changement de valeur 1>>0 ou 0>>1
+    if(old_val ~= actual_val ) %value chaging 1>>0 or 0>>1
         fprintf('transition : %d >> %d \n', old_val, actual_val);
         char_limits = [char_limits i];        
     end
@@ -58,7 +62,7 @@ end
 char_limits = char_limits(2:end);
 char_limits
 
-%struct pour ranger tous les caractères en vue de les traiter
+%struct that store all characters separately in order to treat them after
 %char_list = struct;
 j=1;
 figure;
